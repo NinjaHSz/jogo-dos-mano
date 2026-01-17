@@ -148,26 +148,7 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
     });
 });
 
-document.getElementById('btn-next-question').addEventListener('click', () => {
-    if (!me.isHost) return;
-    const q = getNextQuestion();
-    
-    if (!q) {
-        channel.send({
-            type: 'broadcast',
-            event: 'game_finish'
-        });
-        return;
-    }
-
-    gameStep = usedQuestionIds.length;
-    currentRoundProcessed = false;
-    channel.send({
-        type: 'broadcast',
-        event: 'new_question',
-        payload: { question: q, step: gameStep }
-    });
-});
+// O evento de clique agora é gerenciado abaixo pela função nextBtnOriginalClick para evitar duplicação
 
 document.getElementById('btn-back').onclick = () => showScreen('menu');
 
