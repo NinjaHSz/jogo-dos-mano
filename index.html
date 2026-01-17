@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sombras Online (Vercel Edition)</title>
+    <meta name="theme-color" content="#0b141a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -61,6 +67,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        background-color: #0d1117; /* Darker background for contrast */
+        touch-action: manipulation; /* Improves touch responsiveness */
       }
 
       .wa-list-item {
@@ -107,13 +115,14 @@
 
       /* Garantir que o container ocupe a altura correta no mobile */
       .app-container {
-        height: 100%;
+        height: 100dvh; /* Dynamic viewport height for modern browsers */
         width: 100%;
         max-width: 500px;
         display: flex;
         flex-direction: column;
         background-color: var(--wa-bg);
         position: relative;
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
       }
 
       @media (min-height: 700px) and (min-width: 768px) {
@@ -128,14 +137,23 @@
       #chat-window {
         z-index: 100;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(20px);
+        transform: scale(0.95) translateY(20px);
         opacity: 0;
         pointer-events: none;
       }
       #chat-window.active {
-        transform: translateY(0);
+        transform: scale(1) translateY(0);
         opacity: 1;
         pointer-events: auto;
+      }
+
+      @media (max-width: 400px) {
+        #chat-window {
+          top: 10px !important;
+          bottom: 10px !important;
+          left: 10px !important;
+          right: 10px !important;
+        }
       }
       .chat-bubble {
         max-width: 100%;
@@ -218,12 +236,14 @@
           id="screen-login"
           class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 fade-in overflow-hidden"
         >
-          <div class="mb-4">
+          <div class="mb-4 px-4 w-full">
             <img
               src="https://api.dicebear.com/7.x/identicon/svg?seed=Shadows&backgroundColor=b91c1c"
-              class="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-4 border-2 border-red-500/30"
+              class="w-16 h-16 md:w-24 md:h-24 rounded-full mx-auto mb-4 border-2 border-red-500/30"
             />
-            <h2 class="text-2xl font-bold">Digite seu nome para continuar</h2>
+            <h2 class="text-xl md:text-2xl font-bold leading-tight">
+              Digite seu nome para continuar
+            </h2>
           </div>
 
           <div class="w-full max-w-xs space-y-4">
@@ -412,7 +432,7 @@
               </p>
               <h2
                 id="game-question"
-                class="text-lg md:text-xl font-bold leading-tight mb-4 flex-shrink-0"
+                class="text-base md:text-xl font-bold leading-tight mb-4 flex-shrink-0"
               >
                 ...
               </h2>
@@ -430,16 +450,16 @@
               </div>
             </div>
           </div>
-          <div id="game-footer" class="py-4 flex-shrink-0">
+          <div id="game-footer" class="py-2 md:py-4 flex-shrink-0">
             <button
               id="btn-next-question"
-              class="hidden w-full py-3 bg-wa-accent text-wa-bg font-bold rounded-full uppercase tracking-widest text-xs"
+              class="hidden w-full py-4 bg-wa-accent text-wa-bg font-bold rounded-full uppercase tracking-widest text-xs"
             >
               Próxima Sombra
             </button>
             <p
               id="wait-host-poll"
-              class="text-center text-wa-secondary text-[11px] italic"
+              class="text-center text-wa-secondary text-[10px] md:text-[11px] italic mt-2"
             >
               Silêncio... a revelação está próxima.
             </p>
