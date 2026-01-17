@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sombras Online (Vercel Edition)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              wa: {
+                bg: "#0b141a",
+                panel: "#202c33",
+                accent: "#00a884",
+                secondary: "#8696a0",
+                border: "#313d45",
+              },
+            },
+            fontFamily: {
+              sans: ["Outfit", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap");
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background-color: #0b141a;
+        color: #e9edef;
+      }
+
+      .wa-list-item {
+        transition: background-color 0.2s;
+      }
+      .wa-list-item:active {
+        background-color: #111b21;
+      }
+      .poll-bar {
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .hidden-screen {
+        display: none !important;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #374045;
+        border-radius: 3px;
+      }
+      .heavy-glow {
+        box-shadow: 0 0 20px rgba(185, 28, 28, 0.15);
+      }
+
+      /* Configuration Modal */
+      #setup-alert {
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+      }
+    </style>
+  </head>
+  <body
+    class="flex items-center justify-center min-h-screen p-0 md:p-4 bg-[#0a0a0a]"
+  >
+    <!-- CONFIGURATION OVERLAY (Needed for Vercel + Supabase) -->
+    <div
+      id="setup-alert"
+      class="fixed inset-0 z-[100] flex items-center justify-center p-6 hidden"
+    >
+      <div
+        class="bg-wa-panel p-6 rounded-2xl w-full max-w-sm border border-wa-accent/30 shadow-2xl"
+      >
+        <h2 class="text-wa-accent font-bold mb-2">Configuração Necessária</h2>
+        <p class="text-xs text-wa-secondary mb-4 leading-relaxed">
+          Para rodar no Vercel, precisas de uma conta no
+          <span class="text-white font-bold">Supabase</span> (Grátis). Cria um
+          projeto e cola as chaves abaixo:
+        </p>
+        <div class="space-y-3">
+          <input
+            type="text"
+            id="supa-url"
+            placeholder="Supabase Project URL"
+            class="w-full bg-wa-bg p-3 rounded-lg text-xs outline-none focus:ring-1 focus:ring-wa-accent"
+          />
+          <input
+            type="text"
+            id="supa-key"
+            placeholder="Supabase Anon Key"
+            class="w-full bg-wa-bg p-3 rounded-lg text-xs outline-none focus:ring-1 focus:ring-wa-accent"
+          />
+          <button
+            id="btn-save-config"
+            class="w-full py-3 bg-wa-accent text-wa-bg font-bold rounded-lg text-xs uppercase tracking-widest"
+          >
+            Salvar e Jogar
+          </button>
+        </div>
+        <a
+          href="https://supabase.com"
+          target="_blank"
+          class="block text-center text-[10px] text-wa-secondary mt-4 hover:underline"
+          >Onde encontro isso?</a
+        >
+      </div>
+    </div>
+
+    <!-- Main Container -->
+    <main
+      class="w-full max-w-lg h-screen md:h-[800px] md:rounded-2xl flex flex-col bg-wa-bg overflow-hidden shadow-2xl relative border border-white/5"
+    >
+      <!-- Header -->
+      <header
+        class="bg-wa-panel px-4 py-3 flex items-center gap-3 z-30 shadow-md"
+      >
+        <div
+          id="btn-back"
+          class="hidden cursor-pointer text-wa-secondary hover:text-white"
+        >
+          <i class="fas fa-arrow-left"></i>
+        </div>
+        <div
+          class="w-10 h-10 rounded-full bg-red-900/30 flex items-center justify-center text-red-500 border border-red-500/20"
+        >
+          <i class="fas fa-skull"></i>
+        </div>
+        <div class="flex-1">
+          <h1 class="text-sm font-semibold text-white">Sombras Online</h1>
+          <p id="room-status" class="text-[11px] text-wa-secondary">
+            Vercel Edition
+          </p>
+        </div>
+        <div
+          id="connection-status"
+          class="w-2 h-2 rounded-full bg-gray-600"
+        ></div>
+      </header>
+
+      <!-- Dynamic Content Area -->
+      <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="content-area">
+        <!-- SCREEN: LOGIN -->
+        <section
+          id="screen-login"
+          class="h-full flex flex-col items-center justify-center text-center py-10 fade-in"
+        >
+          <div class="mb-8">
+            <img
+              src="https://api.dicebear.com/7.x/identicon/svg?seed=Shadows&backgroundColor=b91c1c"
+              class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-red-500/30"
+            />
+            <h2 class="text-2xl font-bold">Bem-vindo às Sombras</h2>
+            <p class="text-wa-secondary text-sm px-10 mt-2">
+              Escolha seu codinome antes de entrar.
+            </p>
+          </div>
+
+          <div class="w-full space-y-4 px-6">
+            <input
+              type="text"
+              id="input-name"
+              maxlength="15"
+              class="w-full bg-wa-panel text-white border-b-2 border-transparent focus:border-wa-accent px-4 py-4 rounded-t-xl outline-none transition-all placeholder:text-wa-secondary"
+              placeholder="Teu nome ou alcunha"
+            />
+
+            <button
+              id="btn-login"
+              class="w-full py-4 bg-wa-accent text-wa-bg font-bold rounded-xl active:scale-95 transition-transform uppercase tracking-wider text-sm"
+            >
+              Entrar na Roda
+            </button>
+          </div>
+        </section>
+
+        <!-- SCREEN: MENU -->
+        <section
+          id="screen-menu"
+          class="hidden-screen h-full flex flex-col justify-center space-y-4 fade-in"
+        >
+          <div class="bg-wa-panel/30 p-6 rounded-2xl space-y-4">
+            <button
+              id="btn-create-game"
+              class="w-full p-4 bg-wa-panel hover:bg-wa-border rounded-xl flex items-center gap-4 transition-colors"
+            >
+              <div
+                class="w-10 h-10 bg-wa-accent/10 text-wa-accent rounded-full flex items-center justify-center"
+              >
+                <i class="fas fa-plus"></i>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-sm">Criar Sala</p>
+                <p class="text-xs text-wa-secondary">Inicia a sessão</p>
+              </div>
+            </button>
+            <button
+              id="btn-join-view"
+              class="w-full p-4 bg-wa-panel hover:bg-wa-border rounded-xl flex items-center gap-4 transition-colors"
+            >
+              <div
+                class="w-10 h-10 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center"
+              >
+                <i class="fas fa-sign-in-alt"></i>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-sm">Entrar em Sala</p>
+                <p class="text-xs text-wa-secondary">Código dos amigos</p>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        <!-- SCREEN: JOIN ROOM -->
+        <section
+          id="screen-join"
+          class="hidden-screen h-full flex flex-col items-center justify-center space-y-6 fade-in"
+        >
+          <h2 class="text-xl font-bold">Código da Sala</h2>
+          <input
+            type="text"
+            id="input-room-code"
+            maxlength="4"
+            class="w-32 bg-wa-panel text-white text-3xl font-mono text-center py-4 rounded-xl border-2 border-wa-border focus:border-wa-accent outline-none uppercase tracking-widest"
+            placeholder="****"
+          />
+          <button
+            id="btn-join-room"
+            class="w-full max-w-xs py-4 bg-wa-accent text-wa-bg font-bold rounded-xl"
+          >
+            Entrar
+          </button>
+        </section>
+
+        <!-- SCREEN: WAITING (LOBBY) -->
+        <section
+          id="screen-waiting"
+          class="hidden-screen h-full flex flex-col fade-in"
+        >
+          <div
+            class="bg-wa-panel p-4 rounded-2xl mb-6 text-center shadow-lg border border-wa-accent/20"
+          >
+            <p
+              class="text-[10px] text-wa-accent font-bold uppercase tracking-[0.2em] mb-1"
+            >
+              Código
+            </p>
+            <p
+              id="room-code-display"
+              class="text-4xl font-mono font-bold tracking-widest text-white"
+            >
+              ----
+            </p>
+          </div>
+          <div class="flex-1 space-y-3">
+            <p class="text-xs text-wa-secondary font-bold px-2 uppercase">
+              Integrantes (<span id="count-players">0</span>)
+            </p>
+            <div id="player-list" class="space-y-1"></div>
+          </div>
+          <div class="py-6">
+            <button
+              id="btn-start-game"
+              class="hidden w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95"
+            >
+              COMEÇAR
+            </button>
+            <div
+              id="wait-msg"
+              class="text-center text-wa-secondary text-sm italic py-4"
+            >
+              Aguardando anfitrião...
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN: GAME (POLL) -->
+        <section
+          id="screen-game"
+          class="hidden-screen h-full flex flex-col fade-in"
+        >
+          <div
+            class="bg-wa-panel rounded-2xl overflow-hidden shadow-2xl heavy-glow border border-white/5"
+          >
+            <div
+              id="game-category-bg"
+              class="bg-red-900/40 px-4 py-2 border-b border-white/5"
+            >
+              <span
+                id="game-category"
+                class="text-[10px] font-black text-red-500 uppercase tracking-widest"
+                >Categoria</span
+              >
+            </div>
+            <div class="p-5">
+              <h2
+                id="game-question"
+                class="text-xl font-bold leading-tight mb-6"
+              >
+                ...
+              </h2>
+              <div id="poll-options" class="space-y-3"></div>
+              <div
+                class="mt-6 flex justify-between items-center text-[10px] text-wa-secondary font-medium border-t border-wa-border pt-4"
+              >
+                <span id="vote-info">0 votos</span>
+                <span class="uppercase">Enquete em Tempo Real</span>
+              </div>
+            </div>
+          </div>
+          <div id="game-footer" class="mt-auto py-6">
+            <button
+              id="btn-next-question"
+              class="hidden w-full py-3 bg-wa-accent text-wa-bg font-bold rounded-full uppercase tracking-widest text-xs"
+            >
+              Próxima Sombra
+            </button>
+            <p
+              id="wait-host-poll"
+              class="text-center text-wa-secondary text-[11px] italic"
+            >
+              Silêncio... a revelação está próxima.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
