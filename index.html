@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,10 +38,29 @@
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap");
 
+      :root {
+        --wa-bg: #0b141a;
+        --wa-panel: #202c33;
+        --wa-accent: #00a884;
+        --wa-secondary: #8696a0;
+        --wa-border: #313d45;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Impede rolagem na página principal */
+        background-color: #0a0a0a;
+      }
+
       body {
         font-family: "Outfit", sans-serif;
-        background-color: #0b141a;
         color: #e9edef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .wa-list-item {
@@ -69,77 +88,108 @@
           transform: scale(1);
         }
       }
-      ::-webkit-scrollbar {
-        width: 6px;
+
+      /* Custom Scrollbar para listas internas */
+      .custom-scroll::-webkit-scrollbar {
+        width: 4px;
       }
-      ::-webkit-scrollbar-thumb {
+      .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
         background: #374045;
         border-radius: 3px;
       }
+
       .heavy-glow {
         box-shadow: 0 0 20px rgba(185, 28, 28, 0.15);
       }
 
-      /* Configuration Modal */
-      #setup-alert {
-        background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(8px);
+      /* Garantir que o container ocupe a altura correta no mobile */
+      .app-container {
+        height: 100%;
+        width: 100%;
+        max-width: 500px;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--wa-bg);
+        position: relative;
+      }
+
+      @media (min-height: 700px) and (min-width: 768px) {
+        .app-container {
+          height: 85vh;
+          border-radius: 1.5rem;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+      }
+
+      /* Chat Styles */
+      #chat-window {
+        z-index: 100;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(20px);
+        opacity: 0;
+        pointer-events: none;
+      }
+      #chat-window.active {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .chat-bubble {
+        max-width: 100%;
+        word-wrap: break-word;
+        position: relative;
+        box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+        cursor: pointer;
+      }
+      .reply-preview {
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid var(--wa-accent);
+        padding: 10px 14px;
+        margin: 0 8px 8px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        display: none;
+      }
+      .chat-reply-quoted {
+        background: rgba(0, 0, 0, 0.15);
+        border-left: 4px solid var(--wa-accent);
+        padding: 6px 10px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .chat-reply-quoted .quoted-user {
+        font-weight: 800;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .chat-reply-quoted .quoted-text {
+        font-size: 11px;
+        opacity: 0.9;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .group:hover {
+        background: rgba(255, 255, 255, 0.02);
       }
     </style>
   </head>
   <body
     class="flex items-center justify-center min-h-screen p-0 md:p-4 bg-[#0a0a0a]"
   >
-    <!-- CONFIGURATION OVERLAY (Needed for Vercel + Supabase) -->
-    <div
-      id="setup-alert"
-      class="fixed inset-0 z-[100] flex items-center justify-center p-6 hidden"
-    >
-      <div
-        class="bg-wa-panel p-6 rounded-2xl w-full max-w-sm border border-wa-accent/30 shadow-2xl"
-      >
-        <h2 class="text-wa-accent font-bold mb-2">Configuração Necessária</h2>
-        <p class="text-xs text-wa-secondary mb-4 leading-relaxed">
-          Para rodar no Vercel, precisas de uma conta no
-          <span class="text-white font-bold">Supabase</span> (Grátis). Cria um
-          projeto e cola as chaves abaixo:
-        </p>
-        <div class="space-y-3">
-          <input
-            type="text"
-            id="supa-url"
-            placeholder="Supabase Project URL"
-            class="w-full bg-wa-bg p-3 rounded-lg text-xs outline-none focus:ring-1 focus:ring-wa-accent"
-          />
-          <input
-            type="text"
-            id="supa-key"
-            placeholder="Supabase Anon Key"
-            class="w-full bg-wa-bg p-3 rounded-lg text-xs outline-none focus:ring-1 focus:ring-wa-accent"
-          />
-          <button
-            id="btn-save-config"
-            class="w-full py-3 bg-wa-accent text-wa-bg font-bold rounded-lg text-xs uppercase tracking-widest"
-          >
-            Salvar e Jogar
-          </button>
-        </div>
-        <a
-          href="https://supabase.com"
-          target="_blank"
-          class="block text-center text-[10px] text-wa-secondary mt-4 hover:underline"
-          >Onde encontro isso?</a
-        >
-      </div>
-    </div>
-
     <!-- Main Container -->
-    <main
-      class="w-full max-w-lg h-screen md:h-[800px] md:rounded-2xl flex flex-col bg-wa-bg overflow-hidden shadow-2xl relative border border-white/5"
-    >
+    <div class="app-container shadow-2xl overflow-hidden">
       <!-- Header -->
       <header
-        class="bg-wa-panel px-4 py-3 flex items-center gap-3 z-30 shadow-md"
+        class="bg-wa-panel px-4 py-4 flex items-center gap-3 z-30 shadow-md flex-shrink-0"
       >
         <div
           id="btn-back"
@@ -153,10 +203,7 @@
           <i class="fas fa-skull"></i>
         </div>
         <div class="flex-1">
-          <h1 class="text-sm font-semibold text-white">Sombras Online</h1>
-          <p id="room-status" class="text-[11px] text-wa-secondary">
-            Vercel Edition
-          </p>
+          <h1 class="text-sm font-semibold text-white">Jogo dos Mano</h1>
         </div>
         <div
           id="connection-status"
@@ -165,30 +212,27 @@
       </header>
 
       <!-- Dynamic Content Area -->
-      <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4" id="content-area">
-        <!-- SCREEN: LOGIN -->
+      <div class="flex-1 overflow-hidden relative" id="content-area">
+        <!-- SCREEN: LOGIN (Totalmente centralizada e sem rolagem) -->
         <section
           id="screen-login"
-          class="h-full flex flex-col items-center justify-center text-center py-10 fade-in"
+          class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 fade-in overflow-hidden"
         >
-          <div class="mb-8">
+          <div class="mb-4">
             <img
               src="https://api.dicebear.com/7.x/identicon/svg?seed=Shadows&backgroundColor=b91c1c"
-              class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-red-500/30"
+              class="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto mb-4 border-2 border-red-500/30"
             />
-            <h2 class="text-2xl font-bold">Bem-vindo às Sombras</h2>
-            <p class="text-wa-secondary text-sm px-10 mt-2">
-              Escolha seu codinome antes de entrar.
-            </p>
+            <h2 class="text-2xl font-bold">Digite seu nome para continuar</h2>
           </div>
 
-          <div class="w-full space-y-4 px-6">
+          <div class="w-full max-w-xs space-y-4">
             <input
               type="text"
               id="input-name"
               maxlength="15"
               class="w-full bg-wa-panel text-white border-b-2 border-transparent focus:border-wa-accent px-4 py-4 rounded-t-xl outline-none transition-all placeholder:text-wa-secondary"
-              placeholder="Teu nome ou alcunha"
+              placeholder="Seu nome..."
             />
 
             <button
@@ -203,9 +247,17 @@
         <!-- SCREEN: MENU -->
         <section
           id="screen-menu"
-          class="hidden-screen h-full flex flex-col justify-center space-y-4 fade-in"
+          class="hidden-screen absolute inset-0 flex flex-col justify-center p-6 space-y-4 fade-in"
         >
-          <div class="bg-wa-panel/30 p-6 rounded-2xl space-y-4">
+          <button
+            onclick="showScreen('login')"
+            class="absolute top-4 left-4 p-2 text-wa-secondary hover:text-white transition-colors"
+          >
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div
+            class="bg-wa-panel/30 p-6 rounded-2xl space-y-4 border border-white/5"
+          >
             <button
               id="btn-create-game"
               class="w-full p-4 bg-wa-panel hover:bg-wa-border rounded-xl flex items-center gap-4 transition-colors"
@@ -217,7 +269,7 @@
               </div>
               <div class="text-left">
                 <p class="font-bold text-sm">Criar Sala</p>
-                <p class="text-xs text-wa-secondary">Inicia a sessão</p>
+                <p class="text-xs text-wa-secondary">Começar uma nova sessão</p>
               </div>
             </button>
             <button
@@ -231,17 +283,55 @@
               </div>
               <div class="text-left">
                 <p class="font-bold text-sm">Entrar em Sala</p>
-                <p class="text-xs text-wa-secondary">Código dos amigos</p>
+                <p class="text-xs text-wa-secondary">
+                  Cata o código com a galera
+                </p>
               </div>
             </button>
+            <button
+              id="btn-rooms-view"
+              class="w-full p-4 bg-wa-panel hover:bg-wa-border rounded-xl flex items-center gap-4 transition-colors"
+            >
+              <div
+                class="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center"
+              >
+                <i class="fas fa-network-wired"></i>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-sm">Salas Ativas</p>
+                <p class="text-xs text-wa-secondary">Ver quem tá jogando</p>
+              </div>
+            </button>
+
+            <div class="border-t border-white/5 pt-4">
+              <button
+                id="btn-editor-view"
+                class="w-full p-3 bg-transparent hover:bg-white/5 rounded-xl flex items-center gap-4 transition-colors text-wa-secondary hover:text-white"
+              >
+                <div class="w-8 h-8 flex items-center justify-center">
+                  <i class="fas fa-cog"></i>
+                </div>
+                <div class="text-left">
+                  <p class="text-xs font-bold uppercase tracking-wider">
+                    Configurar Perguntas
+                  </p>
+                </div>
+              </button>
+            </div>
           </div>
         </section>
 
         <!-- SCREEN: JOIN ROOM -->
         <section
           id="screen-join"
-          class="hidden-screen h-full flex flex-col items-center justify-center space-y-6 fade-in"
+          class="hidden-screen absolute inset-0 flex flex-col items-center justify-center p-6 space-y-6 fade-in"
         >
+          <button
+            onclick="showScreen('menu')"
+            class="absolute top-4 left-4 p-2 text-wa-secondary hover:text-white transition-colors"
+          >
+            <i class="fas fa-arrow-left"></i>
+          </button>
           <h2 class="text-xl font-bold">Código da Sala</h2>
           <input
             type="text"
@@ -254,17 +344,17 @@
             id="btn-join-room"
             class="w-full max-w-xs py-4 bg-wa-accent text-wa-bg font-bold rounded-xl"
           >
-            Entrar
+            Bora Jogar
           </button>
         </section>
 
         <!-- SCREEN: WAITING (LOBBY) -->
         <section
           id="screen-waiting"
-          class="hidden-screen h-full flex flex-col fade-in"
+          class="hidden-screen absolute inset-0 flex flex-col p-4 fade-in"
         >
           <div
-            class="bg-wa-panel p-4 rounded-2xl mb-6 text-center shadow-lg border border-wa-accent/20"
+            class="bg-wa-panel p-4 rounded-2xl mb-4 text-center shadow-lg border border-wa-accent/20 flex-shrink-0"
           >
             <p
               class="text-[10px] text-wa-accent font-bold uppercase tracking-[0.2em] mb-1"
@@ -278,24 +368,29 @@
               ----
             </p>
           </div>
-          <div class="flex-1 space-y-3">
-            <p class="text-xs text-wa-secondary font-bold px-2 uppercase">
-              Integrantes (<span id="count-players">0</span>)
+          <div class="flex-1 flex flex-col min-h-0">
+            <p
+              class="text-xs text-wa-secondary font-bold px-2 mb-2 uppercase flex-shrink-0"
+            >
+              Galera na Roda (<span id="count-players">0</span>)
             </p>
-            <div id="player-list" class="space-y-1"></div>
+            <div
+              id="player-list"
+              class="flex-1 overflow-y-auto custom-scroll space-y-1"
+            ></div>
           </div>
-          <div class="py-6">
+          <div class="py-4 flex-shrink-0">
             <button
               id="btn-start-game"
               class="hidden w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95"
             >
-              COMEÇAR
+              SOLTAR O CAOS
             </button>
             <div
               id="wait-msg"
-              class="text-center text-wa-secondary text-sm italic py-4"
+              class="text-center text-wa-secondary text-sm italic py-2"
             >
-              Aguardando anfitrião...
+              Esperando o dono da sala começar...
             </div>
           </div>
         </section>
@@ -303,38 +398,39 @@
         <!-- SCREEN: GAME (POLL) -->
         <section
           id="screen-game"
-          class="hidden-screen h-full flex flex-col fade-in"
+          class="hidden-screen absolute inset-0 flex flex-col p-4 fade-in"
         >
           <div
-            class="bg-wa-panel rounded-2xl overflow-hidden shadow-2xl heavy-glow border border-white/5"
+            class="flex-1 flex flex-col min-h-0 bg-wa-panel rounded-2xl overflow-hidden shadow-2xl heavy-glow border border-white/5"
           >
-            <div
-              id="game-category-bg"
-              class="bg-red-900/40 px-4 py-2 border-b border-white/5"
-            >
-              <span
-                id="game-category"
-                class="text-[10px] font-black text-red-500 uppercase tracking-widest"
-                >Categoria</span
+            <div class="flex-1 flex flex-col p-5 overflow-hidden">
+              <p
+                id="game-step"
+                class="text-[10px] text-wa-accent font-black uppercase tracking-[0.2em] mb-2"
               >
-            </div>
-            <div class="p-5">
+                Pergunta 0 de 0
+              </p>
               <h2
                 id="game-question"
-                class="text-xl font-bold leading-tight mb-6"
+                class="text-lg md:text-xl font-bold leading-tight mb-4 flex-shrink-0"
               >
                 ...
               </h2>
-              <div id="poll-options" class="space-y-3"></div>
+
               <div
-                class="mt-6 flex justify-between items-center text-[10px] text-wa-secondary font-medium border-t border-wa-border pt-4"
+                id="poll-options"
+                class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1"
+              ></div>
+
+              <div
+                class="mt-4 flex justify-between items-center text-[10px] text-wa-secondary font-medium border-t border-wa-border pt-4 flex-shrink-0"
               >
                 <span id="vote-info">0 votos</span>
                 <span class="uppercase">Enquete em Tempo Real</span>
               </div>
             </div>
           </div>
-          <div id="game-footer" class="mt-auto py-6">
+          <div id="game-footer" class="py-4 flex-shrink-0">
             <button
               id="btn-next-question"
               class="hidden w-full py-3 bg-wa-accent text-wa-bg font-bold rounded-full uppercase tracking-widest text-xs"
@@ -349,8 +445,232 @@
             </p>
           </div>
         </section>
+
+        <!-- SCREEN: FINISH (Fim de Jogo) -->
+        <section
+          id="screen-finish"
+          class="hidden-screen absolute inset-0 flex flex-col p-4 fade-in overflow-hidden"
+        >
+          <div class="flex-1 overflow-y-auto custom-scroll space-y-6 pb-20">
+            <div
+              class="bg-wa-panel p-8 rounded-3xl border border-white/5 shadow-2xl heavy-glow text-center space-y-4"
+            >
+              <div
+                class="w-16 h-16 bg-wa-accent/20 rounded-full flex items-center justify-center mx-auto border border-wa-accent/30 mb-2"
+              >
+                <i
+                  class="fas fa-crown text-wa-accent text-2xl animate-bounce"
+                ></i>
+              </div>
+              <div>
+                <h2
+                  class="text-2xl font-black text-white uppercase tracking-tighter"
+                >
+                  Ranking Global
+                </h2>
+                <p
+                  class="text-wa-secondary text-[10px] uppercase tracking-widest mt-1"
+                >
+                  Pontuação Acumulada
+                </p>
+              </div>
+
+              <!-- Ranking Global Container -->
+              <div id="final-global-ranking" class="space-y-3 pt-4">
+                <!-- JS -->
+              </div>
+            </div>
+
+            <div
+              class="bg-wa-panel rounded-3xl border border-white/5 p-6 shadow-xl"
+            >
+              <h3
+                class="text-xs font-black text-wa-accent uppercase tracking-widest mb-6 border-b border-white/5 pb-2 flex items-center gap-2"
+              >
+                <i class="fas fa-history"></i> Histórico de Sombras
+              </h3>
+              <!-- Histórico Container -->
+              <div id="final-history-list" class="space-y-8">
+                <!-- JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Fixed Footer in Finish Screen -->
+          <div
+            class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-wa-bg via-wa-bg to-transparent"
+          >
+            <button
+              id="btn-finish-back"
+              class="w-full py-4 bg-wa-accent text-wa-bg font-black rounded-2xl shadow-2xl shadow-wa-accent/20 transition-all active:scale-95 uppercase tracking-widest text-xs"
+            >
+              Voltar para o Menu
+            </button>
+          </div>
+        </section>
+
+        <!-- SCREEN: EDITOR (Gerenciamento de Perguntas) -->
+        <section
+          id="screen-editor"
+          class="hidden-screen absolute inset-0 flex flex-col p-4 fade-in"
+        >
+          <button
+            onclick="showScreen('menu')"
+            class="absolute top-4 left-4 p-2 text-wa-secondary hover:text-white transition-colors z-50"
+          >
+            <i class="fas fa-arrow-left"></i>
+          </button>
+
+          <div class="flex-shrink-0 pt-10 mb-4 px-2">
+            <h2 class="text-xl font-bold">Editor de Sombra</h2>
+            <p class="text-xs text-wa-secondary">
+              Adicione ou remova perguntas do banco.
+            </p>
+          </div>
+
+          <!-- Lista de Perguntas -->
+          <div
+            id="editor-questions-list"
+            class="flex-1 overflow-y-auto custom-scroll space-y-2 px-2 mb-4"
+          >
+            <!-- Perguntas carregadas via JS -->
+          </div>
+
+          <!-- Formulário de Adição -->
+          <div
+            class="bg-wa-panel p-4 rounded-2xl border border-white/5 space-y-3 shadow-xl"
+          >
+            <textarea
+              id="edit-text"
+              placeholder="Escreva a nova pergunta polêmica..."
+              class="w-full bg-wa-bg text-sm p-3 rounded-lg border-none outline-none focus:ring-1 focus:ring-wa-accent h-20 resize-none"
+            ></textarea>
+            <button
+              id="btn-add-question"
+              class="w-full py-3 bg-wa-accent text-wa-bg font-bold rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95"
+            >
+              Salvar no Banco
+            </button>
+          </div>
+        </section>
+
+        <!-- SCREEN: ACTIVE ROOMS -->
+        <section
+          id="screen-rooms"
+          class="hidden-screen absolute inset-0 flex flex-col p-4 fade-in"
+        >
+          <button
+            onclick="showScreen('menu')"
+            class="absolute top-4 left-4 p-2 text-wa-secondary hover:text-white transition-colors z-50"
+          >
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div class="flex-shrink-0 pt-10 mb-6 px-2 text-center">
+            <h2 class="text-2xl font-bold text-blue-500">Salas Online</h2>
+            <p class="text-xs text-wa-secondary uppercase tracking-widest mt-1">
+              Radar de Atividade
+            </p>
+          </div>
+          <div
+            id="rooms-list"
+            class="flex-1 overflow-y-auto custom-scroll space-y-3 px-2"
+          >
+            <!-- Salas carregadas via JS -->
+          </div>
+        </section>
       </div>
-    </main>
+
+      <!-- CHAT SYSTEM -->
+      <div id="chat-container" class="hidden">
+        <!-- Floating Button -->
+        <button
+          id="btn-open-chat"
+          class="absolute bottom-6 right-6 w-14 h-14 bg-wa-accent text-wa-bg rounded-full shadow-2xl flex items-center justify-center z-[110] active:scale-95 transition-transform"
+        >
+          <i class="fas fa-comment-dots text-xl"></i>
+          <span
+            id="chat-badge"
+            class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[10px] items-center justify-center rounded-full border-2 border-wa-bg font-bold"
+            >0</span
+          >
+        </button>
+
+        <!-- Chat Window -->
+        <div
+          id="chat-window"
+          class="absolute bottom-24 right-6 left-6 top-20 bg-wa-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 z-[110]"
+        >
+          <div
+            class="bg-wa-bg p-4 flex items-center justify-between border-b border-white/5"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="w-2 h-2 rounded-full bg-wa-accent animate-pulse"
+              ></div>
+              <span class="text-xs font-bold uppercase tracking-widest"
+                >Chat da Sombra</span
+              >
+            </div>
+            <button
+              id="btn-close-chat"
+              class="text-wa-secondary hover:text-white p-2"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- Messages Area -->
+          <div
+            id="chat-messages"
+            class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll flex flex-col"
+          >
+            <!-- Mensagens aqui -->
+          </div>
+
+          <!-- Input Area -->
+          <div class="p-3 bg-wa-bg border-t border-white/5">
+            <!-- Reply Preview Area -->
+            <div
+              id="reply-preview-bar"
+              class="reply-preview items-center justify-between"
+            >
+              <div class="flex-1 overflow-hidden pr-4">
+                <p
+                  id="reply-user"
+                  class="font-bold text-wa-accent uppercase tracking-tighter text-[10px] mb-0.5"
+                >
+                  Respondendo a Mano
+                </p>
+                <p id="reply-text" class="text-wa-secondary truncate italic">
+                  ...
+                </p>
+              </div>
+              <button
+                id="btn-cancel-reply"
+                class="text-wa-secondary hover:text-white p-1"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input
+                type="text"
+                id="chat-input"
+                placeholder="Mande a real..."
+                class="flex-1 bg-wa-panel text-sm px-4 py-2.5 rounded-full outline-none focus:ring-1 focus:ring-wa-accent text-white"
+              />
+              <button
+                id="btn-send-chat"
+                class="w-10 h-10 bg-wa-accent text-wa-bg rounded-full flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <i class="fas fa-paper-plane text-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>
