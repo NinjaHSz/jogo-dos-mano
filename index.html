@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sombras Online (Vercel Edition)</title>
+    <title>Sombras Online</title>
     <meta name="theme-color" content="#0b141a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
@@ -125,7 +125,16 @@
         box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
       }
 
-      @media (min-height: 700px) and (min-width: 768px) {
+      @media (max-width: 640px) {
+        .app-container {
+          height: 100dvh;
+          max-width: 100%;
+          border-radius: 0;
+          border: none;
+        }
+      }
+
+      @media (min-height: 700px) and (min-width: 641px) {
         .app-container {
           height: 85vh;
           border-radius: 1.5rem;
@@ -135,24 +144,34 @@
 
       /* Chat Styles */
       #chat-window {
-        z-index: 100;
+        z-index: 120;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         transform: scale(0.95) translateY(20px);
         opacity: 0;
         pointer-events: none;
+        width: 98%;
+        left: 1%;
+        right: 1%;
+        bottom: 1%;
+        top: 10%;
       }
       #chat-window.active {
         transform: scale(1) translateY(0);
         opacity: 1;
         pointer-events: auto;
       }
+      /* Quando o chat abrir, esconde o botão flutuante para não sobrepor */
+      #chat-window.active ~ #btn-open-chat {
+        display: none;
+      }
 
       @media (max-width: 400px) {
         #chat-window {
-          top: 10px !important;
-          bottom: 10px !important;
-          left: 10px !important;
-          right: 10px !important;
+          top: 5px !important;
+          bottom: 5px !important;
+          left: 0.5% !important;
+          right: 0.5% !important;
+          width: 99% !important;
         }
       }
       .chat-bubble {
@@ -161,6 +180,7 @@
         position: relative;
         box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
         cursor: pointer;
+        font-size: 15px; /* Increased from default */
       }
       .reply-preview {
         background: rgba(255, 255, 255, 0.05);
@@ -221,7 +241,9 @@
           <i class="fas fa-skull"></i>
         </div>
         <div class="flex-1">
-          <h1 class="text-sm font-semibold text-white">Jogo dos Mano</h1>
+          <h1 class="text-base font-bold text-white uppercase tracking-wider">
+            Jogo dos Mano
+          </h1>
         </div>
         <div
           id="connection-status"
@@ -241,8 +263,8 @@
               src="https://api.dicebear.com/7.x/identicon/svg?seed=Shadows&backgroundColor=b91c1c"
               class="w-16 h-16 md:w-24 md:h-24 rounded-full mx-auto mb-4 border-2 border-red-500/30"
             />
-            <h2 class="text-xl md:text-2xl font-bold leading-tight">
-              Digite seu nome para continuar
+            <h2 class="text-2xl md:text-3xl font-bold leading-tight">
+              Digite seu nome mano
             </h2>
           </div>
 
@@ -318,8 +340,8 @@
                 <i class="fas fa-network-wired"></i>
               </div>
               <div class="text-left">
-                <p class="font-bold text-sm">Salas Ativas</p>
-                <p class="text-xs text-wa-secondary">Ver quem tá jogando</p>
+                <p class="font-bold text-base">Salas Ativas</p>
+                <p class="text-sm text-wa-secondary">Ver quem tá jogando</p>
               </div>
             </button>
 
@@ -418,12 +440,12 @@
         <!-- SCREEN: GAME (POLL) -->
         <section
           id="screen-game"
-          class="hidden-screen absolute inset-0 flex flex-col p-4 fade-in"
+          class="hidden-screen absolute inset-0 flex flex-col p-1 sm:p-4 fade-in"
         >
           <div
-            class="flex-1 flex flex-col min-h-0 bg-wa-panel rounded-2xl overflow-hidden shadow-2xl heavy-glow border border-white/5"
+            class="flex-1 flex flex-col min-h-0 bg-wa-panel rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl heavy-glow border border-white/5"
           >
-            <div class="flex-1 flex flex-col p-5 overflow-hidden">
+            <div class="flex-1 flex flex-col p-3 sm:p-5 overflow-hidden">
               <p
                 id="game-step"
                 class="text-[10px] text-wa-accent font-black uppercase tracking-[0.2em] mb-2"
@@ -432,14 +454,14 @@
               </p>
               <h2
                 id="game-question"
-                class="text-base md:text-xl font-bold leading-tight mb-4 flex-shrink-0"
+                class="text-lg md:text-2xl font-bold leading-tight mb-6 flex-shrink-0"
               >
                 ...
               </h2>
 
               <div
                 id="poll-options"
-                class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1"
+                class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1 w-full"
               ></div>
 
               <div
@@ -450,7 +472,7 @@
               </div>
             </div>
           </div>
-          <div id="game-footer" class="py-2 md:py-4 flex-shrink-0">
+          <div id="game-footer" class="py-2 md:py-4 px-2 flex-shrink-0">
             <button
               id="btn-next-question"
               class="hidden w-full py-4 bg-wa-accent text-wa-bg font-bold rounded-full uppercase tracking-widest text-xs"
@@ -602,23 +624,10 @@
 
       <!-- CHAT SYSTEM -->
       <div id="chat-container" class="hidden">
-        <!-- Floating Button -->
-        <button
-          id="btn-open-chat"
-          class="absolute bottom-6 right-6 w-14 h-14 bg-wa-accent text-wa-bg rounded-full shadow-2xl flex items-center justify-center z-[110] active:scale-95 transition-transform"
-        >
-          <i class="fas fa-comment-dots text-xl"></i>
-          <span
-            id="chat-badge"
-            class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[10px] items-center justify-center rounded-full border-2 border-wa-bg font-bold"
-            >0</span
-          >
-        </button>
-
         <!-- Chat Window -->
         <div
           id="chat-window"
-          class="absolute bottom-24 right-6 left-6 top-20 bg-wa-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 z-[110]"
+          class="absolute bg-wa-panel rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10 z-[120]"
         >
           <div
             class="bg-wa-bg p-4 flex items-center justify-between border-b border-white/5"
@@ -678,7 +687,7 @@
                 type="text"
                 id="chat-input"
                 placeholder="Mande a real..."
-                class="flex-1 bg-wa-panel text-sm px-4 py-2.5 rounded-full outline-none focus:ring-1 focus:ring-wa-accent text-white"
+                class="flex-1 bg-wa-panel text-base px-5 py-3 rounded-full outline-none focus:ring-1 focus:ring-wa-accent text-white"
               />
               <button
                 id="btn-send-chat"
@@ -689,6 +698,19 @@
             </div>
           </div>
         </div>
+
+        <!-- Floating Button -->
+        <button
+          id="btn-open-chat"
+          class="absolute bottom-6 right-6 w-14 h-14 bg-wa-accent text-wa-bg rounded-full shadow-2xl flex items-center justify-center z-[110] active:scale-95 transition-transform"
+        >
+          <i class="fas fa-comment-dots text-xl"></i>
+          <span
+            id="chat-badge"
+            class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[10px] items-center justify-center rounded-full border-2 border-wa-bg font-bold"
+            >0</span
+          >
+        </button>
       </div>
     </div>
 

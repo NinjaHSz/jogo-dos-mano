@@ -326,13 +326,21 @@ async function updateRoomActivity(code, count) {
             code, 
             player_count: count,
             updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'code' });
     }
 }
 
 async function renderRoomsList() {
     const list = document.getElementById('rooms-list');
     list.innerHTML = '<p class="text-center text-[10px] text-wa-secondary py-10 uppercase animate-pulse">Escaneando frequências...</p>';
+
+    // Limpeza passiva: Deleta salas que não são atualizadas há mais de 1 minuto
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    try {
+        await supaInstance.from('active_rooms').delete().lt('updated_at', oneMinuteAgo);
+    } catch (e) {
+        console.error("Erro na limpeza de salas:", e);
+    }
 
     const { data, error } = await supaInstance
         .from('active_rooms')
@@ -403,8 +411,8 @@ function renderLobby() {
                 ${p.name[0].toUpperCase()}
             </div>
             <div class="flex-1">
-                <p class="text-sm font-semibold">${p.name} ${p.id === me.id ? '<span class="text-wa-accent text-[10px] ml-1">(Tu)</span>' : ''}</p>
-                <p class="text-[10px] text-wa-secondary uppercase tracking-tighter">${room.players[0].id === p.id ? 'Anfitrião' : 'Pronto'}</p>
+                <p class="text-base font-semibold">${p.name} ${p.id === me.id ? '<span class="text-wa-accent text-[11px] ml-1">(Tu)</span>' : ''}</p>
+                <p class="text-[11px] text-wa-secondary uppercase tracking-tighter">${room.players[0].id === p.id ? 'Anfitrião' : 'Pronto'}</p>
             </div>
         `;
         list.appendChild(item);
@@ -419,13 +427,30 @@ function renderPollResults() {
     container.innerHTML = '';
 
     const scores = {}; // { playerId: points }
-    room.players.forEach(p => scores[p.id] = 0);
+    const voterMap = {}; // { targetId: { 1: [names], 2: [names], 3: [names] } }
+    
+    room.players.forEach(p => {
+        scores[p.id] = 0;
+        voterMap[p.id] = { 1: [], 2: [], 3: [] };
+    });
     
     // Sistema de Pontos: 1º = 3pts, 2º = 2pts, 3º = 1pt
-    Object.values(allVotes).forEach(choices => {
-        if (choices[0] && scores[choices[0]] !== undefined) scores[choices[0]] += 3;
-        if (choices[1] && scores[choices[1]] !== undefined) scores[choices[1]] += 2;
-        if (choices[2] && scores[choices[2]] !== undefined) scores[choices[2]] += 1;
+    Object.entries(allVotes).forEach(([voterId, choices]) => {
+        const voter = room.players.find(p => p.id === voterId);
+        const voterName = voter ? voter.name : "Anônimo";
+
+        if (choices[0] && scores[choices[0]] !== undefined) {
+            scores[choices[0]] += 3;
+            voterMap[choices[0]][1].push(voterName);
+        }
+        if (choices[1] && scores[choices[1]] !== undefined) {
+            scores[choices[1]] += 2;
+            voterMap[choices[1]][2].push(voterName);
+        }
+        if (choices[2] && scores[choices[2]] !== undefined) {
+            scores[choices[2]] += 1;
+            voterMap[choices[2]][3].push(voterName);
+        }
     });
 
     const maxPointsPossible = Object.keys(allVotes).length * 3;
@@ -447,21 +472,32 @@ function renderPollResults() {
         const score = scores[p.id] || 0;
         const percent = maxPointsPossible > 0 ? (score / maxPointsPossible) * 100 : 0;
         const myRank = myVote.indexOf(p.id); // -1 se não votei, 0=1º, 1=2º, 2=3º
+        
+        const voters = voterMap[p.id];
+        let votersHtml = '';
+        
+        if (voters[1].length > 0) votersHtml += `<p class="text-[9px] text-wa-accent mt-1"><span class="font-black">1º:</span> ${voters[1].join(', ')}</p>`;
+        if (voters[2].length > 0) votersHtml += `<p class="text-[9px] text-yellow-500"><span class="font-black">2º:</span> ${voters[2].join(', ')}</p>`;
+        if (voters[3].length > 0) votersHtml += `<p class="text-[9px] text-wa-secondary"><span class="font-black">3º:</span> ${voters[3].join(', ')}</p>`;
 
         const row = document.createElement('div');
-        row.className = 'relative rounded-xl overflow-hidden bg-wa-panel/30 border border-white/5 mb-2 h-16';
+        row.className = 'relative rounded-xl overflow-hidden bg-wa-panel/30 border border-white/5 mb-2 min-h-[64px] pb-2';
         row.innerHTML = `
             <div class="poll-bar absolute top-0 left-0 h-full bg-wa-accent/10 z-0" style="width: 0%"></div>
-            <div class="flex items-center gap-3 px-4 h-full relative z-10">
-                <div class="w-8 h-8 rounded-full bg-wa-secondary/20 flex items-center justify-center text-xs font-bold text-wa-secondary">
+            <div class="flex items-start gap-3 px-4 pt-3 relative z-10">
+                <div class="w-8 h-8 rounded-full bg-wa-secondary/20 flex items-center justify-center text-xs font-bold text-wa-secondary flex-shrink-0">
                     ${index + 1}º
                 </div>
                 <div class="flex-1 flex flex-col">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold">${p.name}</span>
-                        ${myRank !== -1 ? `<span class="text-[9px] px-1.5 py-0.5 bg-wa-accent/20 text-wa-accent rounded-full font-black">${myRank + 1}º Escolha</span>` : ''}
+                        <span class="text-sm font-bold text-white">${p.name}</span>
+                        ${myRank !== -1 ? `<span class="text-[10px] px-1.5 py-0.5 bg-wa-accent/20 text-wa-accent rounded-full font-black">${myRank + 1}º Escolha</span>` : ''}
                     </div>
-                    <span class="text-[9px] text-wa-secondary font-bold uppercase tracking-widest">${score} pontos</span>
+                    <span class="text-[10px] text-wa-secondary font-bold uppercase tracking-widest">${score} pontos</span>
+                    
+                    <div class="mt-2 space-y-0.5 border-l border-white/10 pl-2">
+                        ${votersHtml || '<p class="text-[9px] text-wa-secondary italic">Nenhum voto</p>'}
+                    </div>
                 </div>
                 <div class="text-right">
                     <div class="text-[10px] font-black text-wa-accent">${Math.round(percent)}%</div>
@@ -647,10 +683,10 @@ function receiveMessage(msg) {
     }
 
     div.innerHTML = `
-        ${!isMe ? `<span class="text-[9px] text-wa-secondary ml-3 mb-1 font-bold uppercase tracking-wider">${msg.sender}</span>` : ''}
-        <div class="chat-bubble px-4 py-2.5 rounded-2xl text-[13px] ${isMe ? 'bg-wa-accent text-wa-bg rounded-tr-none' : 'bg-wa-panel text-white rounded-tl-none border border-white/5'}">
+        ${!isMe ? `<span class="text-[10px] text-wa-secondary ml-3 mb-1 font-bold uppercase tracking-wider">${msg.sender}</span>` : ''}
+        <div class="chat-bubble px-4 py-2.5 rounded-2xl text-[15px] ${isMe ? 'bg-wa-accent text-wa-bg rounded-tr-none' : 'bg-wa-panel text-white rounded-tl-none border border-white/5'}">
             ${replyHtml}
-            <div class="leading-relaxed font-medium">${msg.text}</div>
+            <div class="leading-relaxed font-semibold">${msg.text}</div>
         </div>
     `;
     
@@ -711,3 +747,13 @@ window.deleteQuestion = deleteQuestion;
 
 // Initial Check
 initSupabase();
+
+// Listener para tentar limpar a sala se o usuário for o último a sair (Tab fechada)
+window.addEventListener('beforeunload', () => {
+    if (room.id && room.players.length <= 1) {
+        // Tenta uma atualização rápida antes de fechar
+        const code = room.id;
+        // Nota: Isso é "best effort", pode não completar dependendo do navegador
+        supaInstance?.from('active_rooms').delete().eq('code', code).then(() => {});
+    }
+});
