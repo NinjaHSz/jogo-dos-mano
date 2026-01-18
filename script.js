@@ -757,3 +757,12 @@ window.addEventListener('beforeunload', () => {
         supaInstance?.from('active_rooms').delete().eq('code', code).then(() => {});
     }
 });
+
+// Registro do Service Worker para PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker registrado!', reg))
+            .catch(err => console.log('Falha ao registrar Service Worker', err));
+    });
+}
